@@ -6,6 +6,7 @@
 
 #include <SpriteBatch.h>
 #include <SpriteFont.h>
+#include <SimpleMath.h>
 #include "StepTimer.h"
 
 
@@ -73,4 +74,12 @@ private:
 	std::wstring m_str;
 	// カウンター
 	int m_count;
+
+	// テクスチャ
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_texture;
+
+	// スプライト表示スクリーン座標
+	DirectX::SimpleMath::Vector2 m_screenPos;
+	// スプライト原点
+	DirectX::SimpleMath::Vector2 m_origin;
 };

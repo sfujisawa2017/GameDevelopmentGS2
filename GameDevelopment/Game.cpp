@@ -9,6 +9,8 @@
 #include <WICTextureLoader.h>
 #include <DDSTextureLoader.h>
 #include <CommonStates.h>
+#include "ADX2Le.h"
+#include "Resources\Music\Basic.h"
 
 extern void ExitGame();
 
@@ -22,6 +24,12 @@ Game::Game() :
     m_outputHeight(600),
     m_featureLevel(D3D_FEATURE_LEVEL_9_1)
 {
+}
+
+Game::~Game()
+{
+	// サウンドライブラリの終了処理
+	ADX2Le::Finalize();
 }
 
 // Initialize the Direct3D resources required to run.
@@ -73,6 +81,28 @@ void Game::Initialize(HWND window, int width, int height)
 	// 表示座標を画面の中央に指定
 	m_screenPos.x = m_outputWidth / 2.f;
 	m_screenPos.y = m_outputHeight / 2.f;
+
+	// キーボードのオブジェクト生成
+	m_keyboard = std::make_unique<Keyboard>();
+
+	// マウスのオブジェクト生成
+	m_mouse = std::make_unique<Mouse>();
+	// ウィンドウハンドラを通知
+	m_mouse->SetWindow(window);
+
+	// ACFファイルの読み込み
+	ADX2Le::Initialize("Resources/Music/ADX2_samples.acf");
+	// ACBとAWBを読み込む
+	ADX2Le::LoadAcb(
+		"Resources/Music/Basic.acb",
+		"Resources/Music/Basic.awb");
+
+	ADX2Le::Play(CRI_BASIC_MUSIC1);
+
+	gamePad = std::make_unique<GamePad>();
+
+	m_pJoyPad = std::make_unique<JoyPad>();
+	m_pJoyPad->Initialize(window);
 }
 
 // Executes the basic game loop.
@@ -89,6 +119,9 @@ void Game::Tick()
 // Updates the world.
 void Game::Update(DX::StepTimer const& timer)
 {
+	// サウンドライブラリの毎フレーム更新
+	ADX2Le::Update();
+
     float elapsedTime = float(timer.GetElapsedSeconds());
 
     // TODO: Add your game logic here.
@@ -103,6 +136,94 @@ void Game::Update(DX::StepTimer const& timer)
 	ss << L"aiueo" << m_count << L"kakiku";
 	// ストリングストリームから文字列を取得
 	m_str = ss.str();
+
+	// キーボードの状態を取得
+	Keyboard::State kb = m_keyboard->GetState();
+	// キーボードトラッカーの更新
+	m_keyboardTracker.Update(kb);
+
+	//if (kb.Back)
+	//{
+	//	// Backspace key is down
+	//	m_str = L"BackSpace!";
+	//}
+
+	// スペースキーのトリガー判定
+	//if (m_keyboardTracker.IsKeyReleased(Keyboard::Keys::Back))
+	//if (m_keyboardTracker.released.Back)
+	//{
+	//	m_str = L"Back!";
+	//}
+	//else
+	//{
+	//	m_str = L"";
+	//}
+
+	// マウスの状態を取得
+	Mouse::State state = m_mouse->GetState();
+	m_tracker.Update(state);
+
+
+	if ( m_tracker.rightButton == Mouse::ButtonStateTracker::HELD)
+	{
+		m_str = L"Trigger!";
+	}
+	else
+	{
+		m_str = L"";
+	}
+
+	SimpleMath::Vector2 mousePosInPixels(float(state.x), float(state.y));
+
+	m_screenPos = mousePosInPixels;
+
+	//if (m_tracker.leftButton == Mouse::ButtonStateTracker::ButtonState::PRESSED)
+	//{
+		m_mouse->SetMode(Mouse::MODE_RELATIVE);
+	//}
+	//else if (m_tracker.leftButton == Mouse::ButtonStateTracker::ButtonState::RELEASED)
+	//{
+	//	m_mouse->SetMode(Mouse::MODE_ABSOLUTE);
+	//}
+
+	// ゲームパッドの状態取得
+	DirectX::GamePad::State padstate = gamePad->GetState(0, GamePad::DEAD_ZONE_CIRCULAR);
+
+	// 接続の確認
+	if (padstate.IsConnected())
+	{
+		// Aボタンが押されているか
+		if (padstate.IsAPressed())
+		{
+			// 今押されている
+
+		}
+
+		// 方向キーの下が押されているか
+		if (padstate.IsDPadDownPressed())
+		{
+
+		}
+
+		// 左スティック左右(-1~+1)
+		float posx = padstate.thumbSticks.leftX;
+		// 左スティック上下(-1~+1)
+		float posy = padstate.thumbSticks.leftY;
+
+		// 右トリガーがどれだけ押されているか(0~1)
+		float throttle = padstate.triggers.right;
+
+		// 振動の設定
+		static float angle = 0.0;
+		angle += 0.03f;
+		float vibration = cosf(angle) / 2.0f + 0.5f;
+
+		gamePad->SetVibration(0, throttle, throttle);
+
+		// デバイスの能力を取得
+		GamePad::Capabilities caps = gamePad->GetCapabilities(0);
+
+	}
 }
 
 // Draws the scene.

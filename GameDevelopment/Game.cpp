@@ -122,6 +122,10 @@ void Game::Update(DX::StepTimer const& timer)
 	// サウンドライブラリの毎フレーム更新
 	ADX2Le::Update();
 
+	m_pJoyPad->Update();
+
+	LONG stickLX = m_pJoyPad->getStickLX(0);
+
     float elapsedTime = float(timer.GetElapsedSeconds());
 
     // TODO: Add your game logic here.
@@ -348,7 +352,7 @@ void Game::CreateDevice()
     UINT creationFlags = 0;
 
 #ifdef _DEBUG
-    creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
+//    creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
     static const D3D_FEATURE_LEVEL featureLevels [] =
